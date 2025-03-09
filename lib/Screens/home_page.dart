@@ -26,7 +26,6 @@ class _HomePageState extends State<HomePage> {
   bool isFavorite = false;
   Timer? _timer;
   DateTime _currentDateTime = DateTime.now();
-  // ignore: unused_field
   String _currentVideoUrl = 'https://mercyott.com/hls_output/master.m3u8';
   bool _isLiveStream = true;
   String _selectedProgramTitle = 'Mercy TV Live';
@@ -42,9 +41,6 @@ class _HomePageState extends State<HomePage> {
     WakelockPlus.enable();
     _startOrientationListener();
     rotationStream = RotationHelper.autoRotateStream;
-    // accelerometerEventStream().listen((AccelerometerEvent event) {
-    //   log("Test Accelerometer: x=${event.x}, y=${event.y}, z=${event.z}");
-    // });
   }
 
   void _startTimer() {
@@ -115,16 +111,15 @@ class _HomePageState extends State<HomePage> {
       if (!autoRotateOn) {
         log("Auto-rotate is OFF, ignoring orientation changes.");
         yield null;
-        continue; // Skip detecting orientation changes
+        continue;
       }
 
       await for (AccelerometerEvent event in accelerometerEventStream()) {
         log("Accelerometer Event: x=${event.x}, y=${event.y}, z=${event.z}");
-        double x = event.x; // Horizontal tilt
-        double y = event.y; // Vertical tilt
-        double z = event.z; // Flat detection
+        double x = event.x;
+        double y = event.y;
+        double z = event.z;
 
-        // Ignore changes if the device is lying flat
         if (z.abs() > 8) {
           log("Device is flat, ignoring orientation change.");
           yield null;
@@ -168,19 +163,15 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // Get screen dimensions
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    // Dynamic font scaling based on screen width
-    double baseFontSize =
-        screenWidth < 360 ? 14 : 16; // Smaller font for small screens
+    double baseFontSize = screenWidth < 360 ? 14 : 16;
     double titleFontSize = screenWidth < 360 ? 18 : 22;
     double buttonFontSize = screenWidth < 360 ? 16 : 20;
 
-    // Dynamic padding and spacing
-    double horizontalPadding = screenWidth * 0.04; // 4% of screen width
-    double verticalSpacing = screenHeight * 0.015; // 1.5% of screen height
+    double horizontalPadding = screenWidth * 0.04;
+    double verticalSpacing = screenHeight * 0.015;
 
     String formattedDate = _selectedProgramDate.isNotEmpty
         ? _selectedProgramDate
@@ -205,8 +196,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
             SizedBox(
-              height:
-                  screenHeight * 0.3, // 30% of screen height for video player
+              height: screenHeight * 0.3,
               child: NewScreenPlayer(),
             ),
             Expanded(
@@ -222,7 +212,7 @@ class _HomePageState extends State<HomePage> {
                       Row(
                         children: [
                           SizedBox(
-                            width: screenWidth * 0.75, // 75% of screen width
+                            width: screenWidth * 0.75,
                             child: GestureDetector(
                               child: Text(
                                 _selectedProgramTitle,
@@ -257,8 +247,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           SizedBox(width: horizontalPadding * 0.5),
-                          const Text("|",
-                              style: TextStyle(color: Colors.white)),
+                          const Text("|", style: TextStyle(color: Colors.white)),
                           SizedBox(width: horizontalPadding * 0.5),
                           Text(
                             formattedTime,
@@ -270,12 +259,12 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                       SizedBox(height: verticalSpacing),
-                      const ButtonSection(), 
+                      const ButtonSection(),
                       SizedBox(height: verticalSpacing * 2),
                       GestureDetector(
                         onTap: _launchURL,
                         child: Container(
-                          height: screenHeight * 0.06, 
+                          height: screenHeight * 0.06,
                           width: screenWidth * 0.9,
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -300,15 +289,14 @@ class _HomePageState extends State<HomePage> {
                         'Past Programs',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize:
-                              baseFontSize + 2, // Slightly larger than base
+                          fontSize: baseFontSize + 2,
                           fontWeight: FontWeight.w300,
                           fontFamily: 'Mulish-Medium',
                         ),
                       ),
                       SizedBox(height: verticalSpacing * 0.5),
                       Container(
-                        width: screenWidth * 0.35, // 35% of screen width
+                        width: screenWidth * 0.35,
                         height: 2,
                         color: CustomColors.buttonColor,
                       ),

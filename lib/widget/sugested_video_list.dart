@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mercy_tv_app/API/api_integration.dart';
@@ -16,35 +17,44 @@ class SuggestedVideoCard extends StatefulWidget {
 
 class _SuggestedVideoCardState extends State<SuggestedVideoCard> {
   late Future<List<dynamic>> _videoDataFuture;
+  List<dynamic> _videoData = [];
 
   @override
   void initState() {
     super.initState();
-    _videoDataFuture = fetchSortedVideoData();
+    _videoDataFuture = _fetchSortedVideoData();
   }
 
-  Future<List<dynamic>> fetchSortedVideoData() async {
+  Future<List<dynamic>> _fetchSortedVideoData() async {
     List<dynamic> data = await ApiIntegration().getVideoData();
-
-    data.sort(
-        (a, b) => int.parse(b['video_id']).compareTo(int.parse(a['video_id'])));
-
-    return data;
+    data.sort((a, b) => int.parse(b['video_id']).compareTo(int.parse(a['video_id'])));
+    return data; // Full list
   }
 
   @override
   Widget build(BuildContext context) {
     final HomeController homeController = Get.put(HomeController());
-    return FutureBuilder(
+
+    return FutureBuilder<List<dynamic>>(
       future: _videoDataFuture,
-      builder: (context, AsyncSnapshot snapshot) {
+      builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const SizedBox(
+            height: 200,
+            child: Center(child: CircularProgressIndicator()),
+          );
         } else if (snapshot.hasError) {
-          return Center(child: Text('Error: \${snapshot.error}'));
-        } else if (!snapshot.hasData || snapshot.data.isEmpty) {
-          return const Center(child: Text('No videos available'));
+          return SizedBox(
+            height: 200,
+            child: Center(child: Text('Error: ${snapshot.error}')),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox(
+            height: 200,
+            child: Center(child: Text('No videos available')),
+          );
         } else {
+          _videoData = snapshot.data!;
           return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -54,9 +64,9 @@ class _SuggestedVideoCardState extends State<SuggestedVideoCard> {
               mainAxisSpacing: 15,
               childAspectRatio: 1.5,
             ),
-            itemCount: snapshot.data.length,
+            itemCount: _videoData.length,
             itemBuilder: (context, index) {
-              var video = snapshot.data[index];
+              var video = _videoData[index];
               var program = video['program'] ?? {};
 
               ProgramDetails programDetails = ProgramDetails(
@@ -70,8 +80,7 @@ class _SuggestedVideoCardState extends State<SuggestedVideoCard> {
               return Obx(
                 () => VideoThumbnailCard(
                   programDetails: programDetails,
-                  isPlaying:
-                      homeController.currentlyPlayingIndex?.value == index,
+                  isPlaying: homeController.currentlyPlayingIndex?.value == index,
                   onTap: (details) {
                     homeController.currentlyPlayingIndex?.value = index;
                     widget.onVideoTap(details);
@@ -108,7 +117,6 @@ class VideoThumbnailCard extends StatelessWidget {
 
       String formattedDate =
           "${parsedDate.day} ${_getMonth(parsedDate.month)} ${parsedDate.year}";
-
       String formattedTime = _formatTime(hour, minute);
       return "$formattedDate | $formattedTime";
     } catch (e) {
@@ -144,67 +152,47 @@ class VideoThumbnailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => onTap(programDetails),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: isPlaying
-                ? Border.all(color: CustomColors.buttonColor, width: 3)
-                : null,
-            boxShadow: isPlaying
-                ? [
-                    BoxShadow(
-                      color: Colors.redAccent.withOpacity(0.6),
-                      blurRadius: 10,
-                      spreadRadius: 2,
-                    ),
-                  ]
-                : [],
-          ),
+    return GestureDetector(
+      onTap: () => onTap(programDetails),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: isPlaying
+              ? Border.all(color: CustomColors.buttonColor, width: 2)
+              : null,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  'https://mercyott.com/${programDetails.imageUrl ?? ''}',
-                  width: double.infinity,
-                  height: double.infinity,
+              CachedNetworkImage(
+                imageUrl: 'https://mercyott.com/${programDetails.imageUrl ?? ''}',
+                fit: BoxFit.cover,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                errorWidget: (context, url, error) => Image.asset(
+                  'assets/images/video_thumb_1.png',
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Image.asset(
-                    'assets/images/video_thumb_1.png',
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
                 ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  image: const DecorationImage(
-                    image: AssetImage('assets/images/transparent.png'),
-                    fit: BoxFit
-                        .cover,
-                  ),
-                ),
+                fadeInDuration: const Duration(milliseconds: 200),
+                fadeOutDuration: const Duration(milliseconds: 200),
               ),
               Positioned(
-                left: 10,
-                bottom: 10,
+                left: 8,
+                bottom: 8,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       programDetails.title,
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: 'Mulish-Medium'),
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: 'Mulish-Medium',
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -212,15 +200,15 @@ class VideoThumbnailCard extends StatelessWidget {
                     Row(
                       children: [
                         const Icon(Icons.history,
-                            color: CustomColors.buttonColor, size: 18),
-                        const SizedBox(width: 5),
+                            color: CustomColors.buttonColor, size: 16),
+                        const SizedBox(width: 4),
                         Text(
-                          formatDateTime(
-                              programDetails.date, programDetails.time),
+                          formatDateTime(programDetails.date, programDetails.time),
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontFamily: 'Mulish-Medium'),
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontFamily: 'Mulish-Medium',
+                          ),
                         ),
                       ],
                     ),
